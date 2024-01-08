@@ -6,7 +6,7 @@ from fuzzywuzzy import fuzz
 from transformers import pipeline
 
 # Your OpenAI API key
-openai.api_key = 'Have Not Shared my private key please use yours for review, Thank you'
+openai.api_key = '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'
 
 if len(sys.argv) < 2:
     print("Please provide a query as a command-line argument.")
@@ -84,8 +84,7 @@ print(f"Summary Similarity Score: {summary_similarity_score}")
 
 # Provide insights for decision-making based on the summaries and solutions
 # You can add your own logic here based on the summaries, similarity scores, etc.
-if summary_similarity_score < 60:
-    print("The generated solution summary significantly differs from the provided solution summary. Further analysis and refinement may be required.")
+if summary_similarity_score <= 51:
+    print("The generated solution summary significantly differs from the provided solution summary.")
 else:
-    print("The generated solution summary aligns closely with the provided solution summary. It appears to provide a similar approach.")
-
+    print("The generated solution summary aligns closely with the provided solution summary.")

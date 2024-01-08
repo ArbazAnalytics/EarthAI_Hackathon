@@ -1,0 +1,91 @@
+import openai
+import pandas as pd
+import sys
+from fuzzywuzzy import process
+from fuzzywuzzy import fuzz
+from transformers import pipeline
+
+# Your OpenAI API key
+openai.api_key = 'Have Not Shared my private key please use yours for review, Thank you'
+
+if len(sys.argv) < 2:
+    print("Please provide a query as a command-line argument.")
+    sys.exit(1)
+
+query = sys.argv[1]
+print(f"Query: {query}")
+
+# Replace 'path/to/your/csv/file.csv' with the actual path or filename of the CSV file
+csv_file_path = 'HackathonAI.csv'
+
+# Load data from CSV file using pandas
+data = pd.read_csv(csv_file_path)
+
+# Assuming 'problem' and 'solution' are column names in your CSV file
+problems = data['problem'].tolist()
+solutions = data['solution'].tolist()
+
+# Fuzzy matching to find the most similar problem to the query
+matches = process.extract(query, problems, limit=1)
+most_similar_problem, similarity_score = matches[0]
+
+# Find the index of the most similar problem and retrieve its corresponding solution
+most_similar_index = problems.index(most_similar_problem)
+provided_solution = solutions[most_similar_index]
+
+print(f"Most Similar Problem: {most_similar_problem}")
+print(f"Similarity Score: {similarity_score}")
+print(f"Provided Solution: {provided_solution}")
+
+# Obtain the correct solution from the dataset for comparison
+correct_solution = data.iloc[most_similar_index]['solution']
+
+# Use OpenAI's completion API to generate a detailed solution
+prompt = f"Improve upon the solution for the problem: {most_similar_problem}. The current solution suggests the following: {provided_solution}. Enhance this solution and provide a detailed plan with different aspects to comprehensively address the issue of food surplus in restaurants and hotels."
+
+# Use OpenAI's completion API to generate a detailed solution
+response = openai.Completion.create(
+    engine="text-davinci-003",
+    prompt=prompt,
+    max_tokens=400,
+    stop=None,
+    temperature=0.3,
+)
+
+# Retrieve and print the generated solution by OpenAI
+generated_solution = response['choices'][0]['text']
+print(f"Generated Solution from OpenAI: {generated_solution}")
+
+# Create a summarization pipeline for better handling of the summaries
+summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", revision="a4f8f3e", framework="pt")
+
+# Generate summary of the provided solution
+generated_solution_summary = summarizer(generated_solution, max_length=150, min_length=30, num_beams=2, length_penalty=2.0, early_stopping=True)
+
+# Generate summary of the provided solution
+provided_solution_summary = summarizer(provided_solution, max_length=150, min_length=30, num_beams=2, length_penalty=2.0, early_stopping=True)
+
+# Retrieve summaries from the generated output
+if len(generated_solution_summary) > 0 and 'summary_text' in generated_solution_summary[0]:
+    generated_summary = generated_solution_summary[0]['summary_text']
+    print(f"Generated Solution Summary: {generated_summary}")
+else:
+    print("Summary generation for the generated solution failed or output format is different. Handle accordingly.")
+
+if len(provided_solution_summary) > 0 and 'summary_text' in provided_solution_summary[0]:
+    provided_summary = provided_solution_summary[0]['summary_text']
+    print(f"Provided Solution Summary: {provided_summary}")
+else:
+    print("Summary generation for the provided solution failed or output format is different. Handle accordingly.")
+
+# Calculate similarity score between summaries
+summary_similarity_score = fuzz.token_set_ratio(provided_summary, generated_summary)
+print(f"Summary Similarity Score: {summary_similarity_score}")
+
+# Provide insights for decision-making based on the summaries and solutions
+# You can add your own logic here based on the summaries, similarity scores, etc.
+if summary_similarity_score < 60:
+    print("The generated solution summary significantly differs from the provided solution summary. Further analysis and refinement may be required.")
+else:
+    print("The generated solution summary aligns closely with the provided solution summary. It appears to provide a similar approach.")
+

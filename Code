@@ -6,7 +6,7 @@ from fuzzywuzzy import fuzz
 from transformers import pipeline
 
 # Your OpenAI API key
-openai.api_key = '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'
+openai.api_key = 'OpenAI API KEY'
 
 if len(sys.argv) < 2:
     print("Please provide a query as a command-line argument.")
